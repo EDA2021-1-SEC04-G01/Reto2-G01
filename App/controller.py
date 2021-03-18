@@ -30,9 +30,51 @@ El controlador se encarga de mediar entre la vista y el modelo.
 """
 
 # Inicialización del Catálogo de libros
+def initCatalog(dtEstructure):
+    """
+    Llama la funcion de inicializacion del catalogo del modelo.
+    """
+    catalog = model.newCatalog(dtEstructure)
+    return catalog
 
 # Funciones para la carga de datos
+def loadData(catalog, dtEstructure):
+    """
+    Carga los datos de los archivos y cargar los datos en la
+    estructura de datos
+    """
+    loadVideos(catalog, dtEstructure)
+    loadCategories(catalog)
+    
+
+def loadVideos(catalog, dtEstructure):
+    videosfile = cf.data_dir + 'videos-small.csv'
+    input_file = csv.DictReader(open(videosfile, encoding='utf-8'))
+    for video in input_file:
+        model.addVideo(catalog, video, dtEstructure)
+
+def loadCategories(catalog):
+    categoriesfile = cf.data_dir + 'category-id.csv'
+    input_file = csv.DictReader(open(categoriesfile, encoding='utf-8'))
+    for category in input_file:
+        model.addCategory(catalog, category)
+
+def mostLikedCategories(catalog, number, category):
+    model.mostLikedCategories(catalog, number, category)
+
 
 # Funciones de ordenamiento
 
+
 # Funciones de consulta sobre el catálogo
+def topVideos(catalog, topAmount, countryname, category,sorting):
+    return model.topVideos(catalog, topAmount, countryname, category,sorting)
+
+def trendingCountry(catalog, country):
+    return model.trendingCountry(catalog, country)
+def trendingCategory(catalog, category):
+    return model.trendingCategory(catalog, category)
+
+def mostLiked(catalog, tag, number, country):
+    return model.mostLiked(catalog, tag, number, country)
+    

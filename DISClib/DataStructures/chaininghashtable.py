@@ -31,7 +31,6 @@ import math
 import config
 from DISClib.DataStructures import mapentry as me
 from DISClib.ADT import list as lt
-from DISClib.Utils import error as error
 assert config
 
 """
@@ -46,7 +45,7 @@ Este código está basado en las implementaciones propuestas en:
 """
 
 
-def newMap(numelements, prime, loadfactor, comparefunction):
+def newMap(numelements, prime, loadfactor, cmpfunc):
     """Crea una tabla de simbolos (map) sin orden
 
     Crea una tabla de hash con capacidad igual a nuelements
@@ -64,33 +63,27 @@ def newMap(numelements, prime, loadfactor, comparefunction):
     Raises:
         Exception
     """
-    try:
-        capacity = nextPrime(numelements//loadfactor)
-        scale = rd.randint(1, prime-1)
-        shift = rd.randint(0, prime-1)
-        hashtable = {'prime': prime,
-                     'capacity': capacity,
-                     'scale': scale,
-                     'shift': shift,
-                     'table': None,
-                     'size': 0,
-                     'limitfactor': loadfactor,
-                     'currentfactor': 0,
-                     'type': 'CHAINING'}
-        if(comparefunction is None):
-            cmpfunc = defaultcompare
-        else:
-            cmpfunc = comparefunction
+    capacity = nextPrime(numelements//loadfactor)
+    scale = rd.randint(1, prime-1) + 1
+    shift = rd.randint(1, prime)
+    hashtable = {'prime': prime,
+                 'capacity': capacity,
+                 'scale': scale,
+                 'shift': shift,
+                 'table': None,
+                 'size': 0,
+                 'type': 'CHAINING'}
+    if(cmpfunc is None):
+        hashtable['comparefunction'] = defaultcompare
+    else:
         hashtable['comparefunction'] = cmpfunc
-        hashtable['table'] = lt.newList(datastructure='ARRAY_LIST',
-                                        cmpfunction=cmpfunc)
-        for _ in range(capacity):
-            bucket = lt.newList(datastructure='SINGLE_LINKED',
-                                cmpfunction=hashtable['comparefunction'])
-            lt.addLast(hashtable['table'], bucket)
-        return hashtable
-    except Exception as exp:
-        error.reraise(exp, 'Chain:newMap')
+    hashtable['table'] = lt.newList(datastructure='ARRAY_LIST',
+                                    cmpfunction=hashtable['comparefunction'])
+    for _ in range(capacity):
+        bucket = lt.newList(datastructure='SINGLE_LINKED',
+                            cmpfunction=hashtable['comparefunction'])
+        lt.addLast(hashtable['table'], bucket)
+    return hashtable
 
 
 def contains(map, key):
@@ -105,16 +98,13 @@ def contains(map, key):
     Raises:
         Exception
     """
-    try:
-        hash = hashValue(map, key)
-        bucket = lt.getElement(map['table'], hash)
-        pos = lt.isPresent(bucket, key)
-        if pos > 0:
-            return True
-        else:
-            return False
-    except Exception as exp:
-        error.reraise(exp, 'Chain:contains')
+    hash = hashValue(map, key)
+    bucket = lt.getElement(map['table'], hash)
+    pos = lt.isPresent(bucket, key)
+    if pos > 0:
+        return True
+    else:
+        return False
 
 
 def put(map, key, value):
@@ -130,24 +120,16 @@ def put(map, key, value):
     Raises:
         Exception
     """
-    try:
-        hash = hashValue(map, key)
-        bucket = lt.getElement(map['table'], hash)
-        entry = me.newMapEntry(key, value)
-        pos = lt.isPresent(bucket, key)
-        if pos > 0:    # La pareja ya exista, se reemplaza el valor
-            lt.changeInfo(bucket, pos, entry)
-        else:
-            lt.addLast(bucket, entry)   # La llave no existia
-            map['size'] += 1
-            map['currentfactor'] = map['size'] / map['capacity']
-
-        if (map['currentfactor'] >= map['limitfactor']):
-            rehash(map)
-
-        return map
-    except Exception as exp:
-        error.reraise(exp, 'Chain:put')
+    hash = hashValue(map, key)
+    bucket = lt.getElement(map['table'], hash)
+    entry = me.newMapEntry(key, value)
+    pos = lt.isPresent(bucket, key)
+    if pos > 0:    # La pareja ya exista, se reemplaza el valor
+        lt.changeInfo(bucket, pos, entry)
+    else:
+        lt.addLast(bucket, entry)   # La llave no existia
+        map['size'] += 1
+    return map
 
 
 def get(map, key):
@@ -161,16 +143,13 @@ def get(map, key):
     Raises:
         Exception
     """
-    try:
-        hash = hashValue(map, key)
-        bucket = lt.getElement(map['table'], hash)
-        pos = lt.isPresent(bucket, key)
-        if pos > 0:
-            return lt.getElement(bucket, pos)
-        else:
-            return None
-    except Exception as exp:
-        error.reraise(exp, 'Chain:get')
+    hash = hashValue(map, key)
+    bucket = lt.getElement(map['table'], hash)
+    pos = lt.isPresent(bucket, key)
+    if pos > 0:
+        return lt.getElement(bucket, pos)
+    else:
+        return None
 
 
 def remove(map, key):
@@ -184,18 +163,15 @@ def remove(map, key):
     Raises:
         Exception
     """
-    try:
-        hash = hashValue(map, key)
-        bucket = lt.getElement(map['table'], hash)
-        pos = lt.isPresent(bucket, key)
-        if pos > 0:
-            lt.deleteElement(bucket, pos)
-            map['size'] -= 1
-            return map
-        else:
-            return None
-    except Exception as exp:
-        error.reraise(exp, 'Chain:remove')
+    hash = hashValue(map, key)
+    bucket = lt.getElement(map['table'], hash)
+    pos = lt.isPresent(bucket, key)
+    if pos > 0:
+        lt.deleteElement(bucket, pos)
+        map['size'] -= 1
+        return map
+    else:
+        return None
 
 
 def size(map):
@@ -220,17 +196,14 @@ def isEmpty(map):
     Raises:
         Exception
     """
-    try:
-        bucket = lt.newList()
-        empty = True
-        for pos in range(lt.size(map['table'])):
-            bucket = lt.getElement(map['table'], pos+1)
-            if lt.isEmpty(bucket) is False:
-                empty = False
-                break
-        return empty
-    except Exception as exp:
-        error.reraise(exp, 'Chain:isempty')
+    bucket = lt.newList()
+    empty = True
+    for pos in range(lt.size(map['table'])):
+        bucket = lt.getElement(map['table'], pos+1)
+        if lt.isEmpty(bucket) is False:
+            empty = False
+            break
+    return empty
 
 
 def keySet(map):
@@ -244,17 +217,14 @@ def keySet(map):
     Raises:
         Exception
     """
-    try:
-        ltset = lt.newList('SINGLE_LINKED', map['comparefunction'])
-        for pos in range(lt.size(map['table'])):
-            bucket = lt.getElement(map['table'], pos+1)
-            if(not lt.isEmpty(bucket)):
-                for element in range(lt.size(bucket)):
-                    entry = lt.getElement(bucket, element+1)
-                    lt.addLast(ltset, entry['key'])
-        return ltset
-    except Exception as exp:
-        error.reraise(exp, 'Chain:keyset')
+    ltset = lt.newList('SINGLE_LINKED', map['comparefunction'])
+    for pos in range(lt.size(map['table'])):
+        bucket = lt.getElement(map['table'], pos+1)
+        if(not lt.isEmpty(bucket)):
+            for element in range(lt.size(bucket)):
+                entry = lt.getElement(bucket, element+1)
+                lt.addLast(ltset, entry['key'])
+    return ltset
 
 
 def valueSet(map):
@@ -268,17 +238,14 @@ def valueSet(map):
     Raises:
         Exception
     """
-    try:
-        ltset = lt.newList('SINGLE_LINKED', map['comparefunction'])
-        for pos in range(lt.size(map['table'])):
-            bucket = lt.getElement(map['table'], pos+1)
-            if (not lt.isEmpty(bucket)):
-                for element in range(lt.size(bucket)):
-                    entry = lt.getElement(bucket, element+1)
-                    lt.addLast(ltset, entry['value'])
-        return ltset
-    except Exception as exp:
-        error.reraise(exp, 'Chain, valueset')
+    ltset = lt.newList('SINGLE_LINKED', map['comparefunction'])
+    for pos in range(lt.size(map['table'])):
+        bucket = lt.getElement(map['table'], pos+1)
+        if (not lt.isEmpty(bucket)):
+            for element in range(lt.size(bucket)):
+                entry = lt.getElement(bucket, element+1)
+                lt.addLast(ltset, entry['value'])
+    return ltset
 
 
 # __________________________________________________________________
@@ -286,39 +253,12 @@ def valueSet(map):
 # __________________________________________________________________
 
 
-def rehash(map):
-    """
-    Se aumenta la capacida de la tabla al doble y se hace
-    rehash de todos los elementos de la tabla
-    """
-    try:
-        newtable = lt.newList('ARRAY_LIST', map['comparefunction'])
-        capacity = nextPrime(map['capacity']*2)
-        oldtable = map['table']
-        for _ in range(capacity):
-            bucket = lt.newList(datastructure='SINGLE_LINKED',
-                                cmpfunction=map['comparefunction'])
-            lt.addLast(newtable, bucket)
-        map['size'] = 0
-        map['currentfactor'] = 0
-        map['table'] = newtable
-        map['capacity'] = capacity
-        for pos in range(1, lt.size(oldtable)+1):
-            bucket = lt.getElement(oldtable, pos)
-            for posbucket in range(1, lt.size(bucket)+1):
-                entry = lt.getElement(bucket, posbucket)
-                put(map, entry['key'], entry['value'])
-        return map
-    except Exception as exp:
-        error.reraise(exp, "Chain:rehash")
-
-
 def hashValue(table, key):
     """
     Calcula un hash para una llave, utilizando el método
     MAD : hashValue(y) = ((ay + b) % p) % M.
     Donde:
-    M es el tamaño de la tabla, primo
+    N es el tamaño de la tabla,
     p es un primo mayor a M,
     a y b enteros aleatoreos dentro del intervalo [0,p-1], con a>0
     """
@@ -327,7 +267,7 @@ def hashValue(table, key):
     b = table['shift']
     p = table['prime']
     m = table['capacity']
-    value = int((abs(a*h + b) % p) % m) + 1
+    value = int((abs(h*a + b) % p) % m + 1)
     return value
 
 
