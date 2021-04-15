@@ -42,11 +42,11 @@ los mismos.
 """
 
 # Construccion de modelos
-def newCatalog(dtEstructure):
+def newCatalog():
     catalog = {'videos': None,
                'categoriesId': None,"categories": None, "tags":None} 
-    catalog['videos'] = lt.newList(dtEstructure)
-    catalog["categoriesId"] = lt.newList(dtEstructure) 
+    catalog['videos'] = lt.newList("ARRAY_LIST")
+    catalog["categoriesId"] = lt.newList("ARRAY_LIST") 
     catalog["categories"] = mp.newMap(100,
                                 maptype='PROBING',
                                 loadfactor=0.5,
@@ -65,7 +65,7 @@ def newCatalog(dtEstructure):
     return catalog
 # Funciones para agregar informacion al catalogo
 
-def addVideo(catalog, video, dtEstructure):
+def addVideo(catalog, video):
     addVideoCountry(catalog, video)
     lt.addLast(catalog['videos'], video)
     addVideoCategory(catalog, video)

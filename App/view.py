@@ -45,18 +45,18 @@ def printMenu():
     print("6- Buscar videos con mas likes para una categoria")
     print("0- Salir")
 
-def initCatalog(dtEstructure):
+def initCatalog():
     """
     Inicializa el catalogo de videos
     """
-    return controller.initCatalog(dtEstructure)
+    return controller.initCatalog()
 
 
-def loadData(catalog, dtEstructure):
+def loadData(catalog):
     """
     Carga la informacion de los videos en la estructura de datos
     """
-    return controller.loadData(catalog, dtEstructure)
+    return controller.loadData(catalog)
 def topVideos(catalog, topAmount, country, category):
     return controller.topVideos(catalog, topAmount, country, category)
 
@@ -83,15 +83,9 @@ while True:
     printMenu()
     inputs = input('Seleccione una opción para continuar\n')
     if int(inputs[0]) == 1:
-        print("Seleccione la estructura de datos que deseea escoger: ")
-        dt= int(input("Para Array escriba 0, Para Single-Linked escriba 1: "))
-        if dt == 0:
-            dtEstructure='ARRAY_LIST'
-        else:
-             dtEstructure="SINGLE_LINKED"
         print("Cargando información de los archivos ......")
-        catalog = initCatalog(dtEstructure)
-        answer= loadData(catalog, dtEstructure)
+        catalog = initCatalog()
+        answer= loadData(catalog)
         print("Tiempo [ms]: ", f"{answer[0]:.3f}", "  ||  ",
               "Memoria [kB]: ", f"{answer[1]:.3f}")
 
