@@ -23,6 +23,9 @@
 import config as cf
 import model
 import csv
+import time
+import tracemalloc 
+
 
 
 """
@@ -43,12 +46,26 @@ def loadData(catalog, dtEstructure):
     Carga los datos de los archivos y cargar los datos en la
     estructura de datos
     """
+    tracemalloc.start() 
+    delta_time = -1.0 
+    delta_memory = -1.0
+
+    start_time = getTime() 
+    start_memory = getMemory()
+
     loadVideos(catalog, dtEstructure)
     loadCategories(catalog)
+
+    stop_time = getTime() 
+    stop_memory = getMemory()
+    tracemalloc.stop()
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+    return delta_time, delta_memory
     
 
 def loadVideos(catalog, dtEstructure):
-    videosfile = cf.data_dir + 'videos-small.csv'
+    videosfile = cf.data_dir + 'videos-large.csv'
     input_file = csv.DictReader(open(videosfile, encoding='utf-8'))
     for video in input_file:
         model.addVideo(catalog, video, dtEstructure)
@@ -59,22 +76,132 @@ def loadCategories(catalog):
     for category in input_file:
         model.addCategory(catalog, category)
 
-def mostLikedCategories(catalog, number, category):
-    model.mostLikedCategories(catalog, number, category)
 
+# Funciones de toma de tiempo y memoria
+def getTime(): 
+    """ 
+    devuelve el instante tiempo de procesamiento en milisegundos
+     """
+    return float(time.perf_counter()*1000)
 
-# Funciones de ordenamiento
+def getMemory(): 
+    """ 
+    toma una muestra de la memoria alocada en instante de tiempo 
+    """ 
+    return tracemalloc.take_snapshot()
 
+def deltaMemory(start_memory, stop_memory): 
+    """ 
+    calcula la diferencia en memoria alocada del programa entre dos 
+    instantes de tiempo y devuelve el resultado en kBytes (ej.: 2100.0 kB) 
+    """ 
+    memory_diff = stop_memory.compare_to(start_memory, "filename") 
+    delta_memory = 0.0 
+ 
+    for stat in memory_diff: 
+        delta_memory = delta_memory + stat.size_diff
+    delta_memory = delta_memory/1024.0 
+    return delta_memory
 
 # Funciones de consulta sobre el catálogo
-def topVideos(catalog, topAmount, countryname, category,sorting):
-    return model.topVideos(catalog, topAmount, countryname, category,sorting)
+def topVideos(catalog, topAmount, countryname, category):
+    
+    delta_time = -1.0
+    delta_memory = -1.0
+
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    model.topVideos(catalog, topAmount, countryname, category)
+   
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+    
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+    return delta_time, delta_memory
 
 def trendingCountry(catalog, country):
-    return model.trendingCountry(catalog, country)
-def trendingCategory(catalog, category):
-    return model.trendingCategory(catalog, category)
+    
+    delta_time = -1.0
+    delta_memory = -1.0
 
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    model.trendingCountry(catalog, country)
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+    return delta_time, delta_memory
+  
+def trendingCategory(catalog, category):
+    
+    delta_time = -1.0
+    delta_memory = -1.0
+
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    model.trendingCategory(catalog, category)
+
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+    return delta_time, delta_memory
+ 
 def mostLiked(catalog, tag, number, country):
-    return model.mostLiked(catalog, tag, number, country)
+    
+    delta_time = -1.0
+    delta_memory = -1.0
+
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    model.mostLiked(catalog, tag, number, country)
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+    return delta_time, delta_memory
+
+def mostLikedCategories(catalog, number, category):
+     
+     delta_time = -1.0
+     delta_memory = -1.0
+
+     tracemalloc.start()
+     start_time = getTime()
+     start_memory = getMemory()
+
+     model.mostLikedCategories(catalog, number, category)
+
+
+     stop_memory = getMemory()
+     stop_time = getTime()
+     tracemalloc.stop()
+
+     delta_time = stop_time - start_time
+     delta_memory = deltaMemory(start_memory, stop_memory)
+     return delta_time, delta_memory
+    
+
     

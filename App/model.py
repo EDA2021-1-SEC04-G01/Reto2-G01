@@ -31,8 +31,8 @@ from DISClib.Algorithms.Sorting import insertionsort as ins # pylint: disable=im
 from DISClib.Algorithms.Sorting import selectionsort as sel # pylint: disable=import-error
 from DISClib.Algorithms.Sorting import mergesort as mer # pylint: disable=import-error
 from DISClib.Algorithms.Sorting import quicksort as qck # pylint: disable=import-error
-from DISClib.ADT import map as mp
-from DISClib.DataStructures import mapentry as me
+from DISClib.ADT import map as mp # pylint: disable=import-error
+from DISClib.DataStructures import mapentry as me # pylint: disable=import-error
 assert cf
 import time
 
@@ -44,40 +44,67 @@ los mismos.
 # Construccion de modelos
 def newCatalog(dtEstructure):
     catalog = {'videos': None,
-               'categoriesId': None,"categories": None, "tags":{}} 
+               'categoriesId': None,"categories": None, "tags":None} 
     catalog['videos'] = lt.newList(dtEstructure)
     catalog["categoriesId"] = lt.newList(dtEstructure) 
     catalog["categories"] = mp.newMap(100,
                                 maptype='PROBING',
                                 loadfactor=0.5,
                                 comparefunction=compareCategories)
+    catalog["countries"] = mp.newMap(500,
+                                maptype='PROBING',
+                                loadfactor=0.5,
+                                comparefunction=None)
+    catalog["tags"] = mp.newMap(1770000,
+                                maptype='PROBING',
+                                loadfactor=0.5,
+                                comparefunction=None)
+                            
     
           
     return catalog
 # Funciones para agregar informacion al catalogo
 
 def addVideo(catalog, video, dtEstructure):
-    if not video["country"] in  catalog.keys():
-        tc= video["country"]
-        catalog[tc]= None
-        catalog[tc]= lt.newList(dtEstructure)
-        lt.addLast(catalog[tc], video)
-    else:
-        tc= video["country"]
-        lt.addLast(catalog[tc], video)
-
+    addVideoCountry(catalog, video)
     lt.addLast(catalog['videos'], video)
     addVideoCategory(catalog, video)
     tags = video["tags"].split("|")
     
     for tag in tags:
         a=tag.strip('\"')
-        if not a in catalog["tags"].keys():
-            catalog["tags"][a]= None
-            catalog["tags"][a]= lt.newList(dtEstructure)
-            lt.addLast(catalog["tags"][a], video)
+        a=a.lower()
+        addVideoTag(catalog, a, video)
+
+
+def addVideoTag(catalog, tagname, video):
+    try:
+        tags = catalog["tags"]
+        existtag= mp.contains(tags, tagname)
+        if existtag:
+            entry= mp.get(tags, tagname)
+            tagdict= me.getValue(entry)
         else:
-             lt.addLast(catalog["tags"][a], video)
+            tagdict= newTag(tagname)
+            mp.put(tags, tagname, tagdict)
+        lt.addLast(tagdict["videos"], video)
+    except Exception:
+        return None
+
+def addVideoCountry(catalog, video):
+    try:
+        countries = catalog["countries"]
+        country= video["country"]
+        existcountry= mp.contains(countries, country)
+        if existcountry:
+            entry= mp.get(countries, country)
+            countrie= me.getValue(entry)
+        else:
+            countrie= newCountry(country)
+            mp.put(countries, country, countrie)
+        lt.addLast(countrie["videos"], video)
+    except Exception:
+        return None
 
 def addCategory(catalog, category):
     lt.addLast(catalog["categoriesId"], category)
@@ -101,19 +128,33 @@ def newCategory(idcategory):
     entry['category'] = idcategory
     entry['videos'] = lt.newList('SINGLE_LINKED', compareYears)
     return entry
+
+def newCountry(country):
+    entry = {'country': "", "videos": None}
+    entry['country'] = country
+    entry['videos'] = lt.newList('SINGLE_LINKED', compareYears)
+    return entry
+
+def newTag(tagname):
+    entry = {'tag': "", "videos": None}
+    entry['tag'] = tagname
+    entry['videos'] = lt.newList('SINGLE_LINKED', compareYears)
+    return entry
 # Funciones para creacion de datos
 
 # Funciones de consulta
-def topVideos(catalog, topAmount, countryname, category,sorting):
+def topVideos(catalog, topAmount, countryname, category):
     for i in lt.iterator(catalog["categoriesId"]):
         if i["name"] == category:
             idnumber= i["id"]
+    categoryDict= mp.get(catalog["categories"], idnumber)
+    videos= me.getValue(categoryDict)["videos"]
     top= lt.newList()
-    for i in lt.iterator(catalog[countryname]):
-        if i["category_id"] == idnumber:
+    for i in lt.iterator(videos):
+        if i["country"] == countryname:
             lt.addLast(top, i)
 
-    sortVideos(top, sorting)
+    mer.sort(top, cmpVideosByViews)
     if topAmount > lt.size(top):
         print("No se puede mostrar el top "+str(topAmount)+", ya que solo existen "+str(lt.size(top))+" videos que cumplen con los filtros seleccioados")
         print("Se mostrara en cambio el top "+str(lt.size(top)))
@@ -121,45 +162,53 @@ def topVideos(catalog, topAmount, countryname, category,sorting):
     sub= lt.subList(top, 1,topAmount)
     for i in range(1, lt.size(sub)+1):
         a=lt.getElement(sub, i)
-        print("Posicion: "+str(i)+"|"+"Titulo: "+a["title"]+"|Canal: "+a["channel_title"]+"|Fecha publicacion: "+a["publish_time"]+"|Vistas: "+a["views"]+"|Likes: "+a["likes"]+"|Dislikes: "+a["dislikes"])
-
+        print("Posicion: "+str(i)+"|"+"Trending Date: "+a["trending_date"]+"|"+"Titulo: "+a["title"]+"|Canal: "+a["channel_title"]+"|Fecha publicacion: "+a["publish_time"]+"|Vistas: "+a["views"]+"|Likes: "+a["likes"]+"|Dislikes: "+a["dislikes"])
+     
+    
 def trendingCountry(catalog, country):
+    countryDict=mp.get(catalog["countries"], country)
+    videos= me.getValue(countryDict)["videos"]
     lista= {}
-    for i in lt.iterator(catalog[country]):
+    for i in lt.iterator(videos):
         if not i["title"] in lista.keys():
             lista[i["title"]]= None
             lista[i["title"]]= 1
         else:
             lista[i["title"]]+= 1
     vid= max(lista, key= lista.get)
-    for i in lt.iterator(catalog[country]):
+    for i in lt.iterator(videos):
         if i["title"] == vid:
             channel= i["channel_title"]
     print("Titulo: "+vid+"\nNombre del canal: "+channel+"\nPais: "+country+"\nNumero de dias: "+str(lista[vid]))
+            
 
 def trendingCategory(catalog, category):
     trending= {}
     for i in lt.iterator(catalog["categoriesId"]):
         if i["name"] == category:
             idnumber= i["id"]
-    for i in lt.iterator(catalog["videos"]):
-        if i["category_id"]== idnumber:
-            if not i["title"] in trending.keys():
-                trending[i["title"]]= None
-                trending[i["title"]]= 1
-            else:
-                trending[i["title"]]+= 1
+    categoryDict=mp.get(catalog["categories"],idnumber)
+    videos= me.getValue(categoryDict)["videos"]
+    for i in lt.iterator(videos):
+        if not i["title"] in trending.keys():
+            trending[i["title"]]= None
+            trending[i["title"]]= 1
+        else:
+            trending[i["title"]]+= 1
     vid= max(trending, key= trending.get)
-    for i in lt.iterator(catalog["videos"]):
+    for i in lt.iterator(videos):
         if i["title"] == vid:
             channel= i["channel_title"]
-    print("Titulo: "+vid+"\nNombre del canal: "+channel+"\nId categoria: "+idnumber+"\nNumero de dias: "+str(trending[vid]))
+    print("Titulo: "+vid+"\nNombre del canal: "+channel+"\nId categoria: "+idnumber+"\nNumero de dias: "+str(trending[vid]))       
+   
 
 def mostLiked(catalog, tagname, number, country):
     lista= lt.newList()
     videos= []
     lista2= lt.newList()
-    for i in lt.iterator(catalog["tags"][tagname]):
+    tagDict=mp.get(catalog["tags"], tagname)
+    video= me.getValue(tagDict)["videos"]
+    for i in lt.iterator(video):
         if i["country"] == country:
             lt.addLast(lista, i)
     mer.sort(lista, cmpVideosByLikes)
@@ -167,6 +216,10 @@ def mostLiked(catalog, tagname, number, country):
         if not i["video_id"] in videos:
             videos.append(i["video_id"])
             lt.addLast(lista2, i)
+    if number > lt.size(lista2):
+        print("La cantidad de videos ha sido ajustada a "+str(lt.size(lista2))+" ya que no existen "+str(number)+" videos disponibles")
+        number=lt.size(lista2)
+        
     sub= lt.subList(lista2, 1, number)
     for i in range(1, lt.size(sub)+1):
         a= lt.getElement(sub, i)
